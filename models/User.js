@@ -1,6 +1,8 @@
 // 몽구스 모델을 가져온다.
 const mongoose = require('mongoose')
+const bcrypt = require('bcrypt')
 
+const saltRounds = 10 // salt몇글자인지
 const userSchema = mongoose.Schema({
     name: {
         type: String, 
@@ -29,6 +31,25 @@ const userSchema = mongoose.Schema({
     },
     tokenExp: { // 토큰이 사용할 수 있는 기간
         type: Number
+    }
+
+})
+//****몽구스에서 가져온 메소드인데 index.js에서 register 분기로 들어오는 포스트메소드의 비밀번호를 암호화할때 pre메소드를 겪고 save한다.
+userSchema.pre('save',function( next ) { // 'save'저장하기전에 함수 함수실행하고 next외치고 save하는것이라는 의미
+
+    var user = this;
+        // 비밀번호를 암호화 시킨다. 
+    if(user.isModified('password')) {
+    //salt생성
+    bcrypt.genSalt(saltRounds, function(err, salt) {
+        if(err) return next(err)
+        bcrypt.hash(user.password, salt, function(err, hash) {
+            // Store hash in your password DB. 
+            if(err) return next(err)
+            user.password = hash
+            next()
+        });
+    });
     }
 
 })
